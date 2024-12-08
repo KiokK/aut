@@ -21,11 +21,11 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 @Getter
 @Setter
 @Indexed
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "reviews")
 @Accessors(chain = true)
+@ToString(exclude = {"client", "cars", "clients"})
 public class Review {
 
     @Id

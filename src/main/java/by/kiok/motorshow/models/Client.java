@@ -31,12 +31,12 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "clients")
 @Accessors(chain = true)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@ToString(exclude = {"contact", "cars", "reviews"})
 public class Client {
 
     @Id

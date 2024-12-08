@@ -30,12 +30,12 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "cars")
 @Accessors(chain = true)
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@ToString(exclude = {"review", "showroom", "clients", "categories"})
 public class Car {
 
     @Id

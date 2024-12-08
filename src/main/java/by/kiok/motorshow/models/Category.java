@@ -24,11 +24,11 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
 @Table(name = "categories")
+@ToString(exclude = {"cars", "carCategory"})
 public class Category {
 
     @Id

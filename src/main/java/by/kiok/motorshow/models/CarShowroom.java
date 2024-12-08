@@ -20,10 +20,10 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
+@ToString(exclude = "cars")
 @Table(name = "car_showrooms")
 public class CarShowroom {
 
