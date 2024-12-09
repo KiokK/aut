@@ -8,20 +8,23 @@ import by.kiok.motorshow.models.Car;
 import by.kiok.motorshow.models.CarShowroom;
 import by.kiok.motorshow.models.enums.CarBrand;
 import by.kiok.motorshow.models.enums.CarCategory;
+import by.kiok.motorshow.reposirories.CarRepository;
 import by.kiok.motorshow.services.CarService;
 import by.kiok.motorshow.utils.HibernateUtil;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 import org.mapstruct.factory.Mappers;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,21 +34,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CarServiceImpl implements CarService {
 
     private final CarMapper carMapper = Mappers.getMapper(CarMapper.class);
+    private final CarRepository carRepository;
     
     @Override
     public CarInfoDto findCarById(Long id) {
-        Car car = null;
-        try (Session session = HibernateUtil.getSession()) {
-            Transaction transaction = session.beginTransaction();
-            car = session.get(Car.class, id);
-
-            transaction.commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
+        Car car = carRepository.findById(id).orElseThrow(EntityNotFoundException::new);
 
         return carMapper.toCarInfoDto(car);
     }
@@ -106,74 +103,35 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public CarPageDto findAllCars(Pageable pageable) {
-        List<Car> cars = new ArrayList<>();
-        try (Session session = HibernateUtil.getSession()) {
-            session.beginTransaction();
+        Page<Car> cars = carRepository.findAll(pageable);
 
-            String hql = """
-                    SELECT DISTINCT c FROM Car c
-                     JOIN FETCH c.categories
-                     JOIN FETCH c.showroom""";
-            Query<Car> query = session.createQuery(hql, Car.class);
-            query.setFirstResult((pageable.getPageNumber() - 1) * pageable.getPageSize());
-            query.setMaxResults(pageable.getPageSize());
-
-            cars = query.list();
-
-            session.getTransaction().commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
-
-        return carMapper.toCarPageDto(cars, pageable.getPageSize(), pageable.getPageNumber());
+        return carMapper.toCarPageDto(cars.getContent(), pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
+    @Transactional
     public CarInfoDto createCar(CarDtoReq carDto) {
         Car car = carMapper.toCar(carDto);
-        try (Session session = HibernateUtil.getSession()) {
-            Transaction transaction = session.beginTransaction();
-            session.save(car);
-            transaction.commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
+        car = carRepository.save(car);
 
         return carMapper.toCarInfoDto(car);
     }
 
     @Override
+    @Transactional
     public CarInfoDto updateCar(long id, CarDtoReq carDtoReq) {
-        try (Session session = HibernateUtil.getSession()) {
-            Transaction transaction = session.beginTransaction();
-            Car car = session.get(Car.class, id);
+        carRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+        Car newVals = carMapper.toCar(carDtoReq);
+        newVals.setId(id);
+        newVals = carRepository.save(newVals);
 
-            car.setModel(carDtoReq.model);
-            car.setPrice(carDtoReq.price);
-            car.setBrandCar(CarBrand.valueOf(carDtoReq.brandCar));
-            car.setYearOfProduction(carDtoReq.yearOfProduction);
-
-            session.merge(car);
-            transaction.commit();
-
-            return carMapper.toCarInfoDto(car);
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
-
-        throw new EntityNotFoundException();
+        return carMapper.toCarInfoDto(newVals);
     }
 
     @Override
+    @Transactional
     public void deleteCarById(Long id) {
-        try (Session session = HibernateUtil.getSession()) {
-            Transaction transaction = session.beginTransaction();
-            Car car = session.find(Car.class, id);
-            session.remove(car);
-            transaction.commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
+        carRepository.deleteById(id);
     }
 
     @Override

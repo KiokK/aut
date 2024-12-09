@@ -15,7 +15,8 @@ public class CommonExceptionHandler {
     public static final Long REQUEST_FAIL_CODE = 1_000_000L;
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({ValidationException.class, PropertyReferenceException.class, EntityException.class})
+    @ExceptionHandler({ValidationException.class, PropertyReferenceException.class, IllegalArgumentException.class,
+            EntityException.class})
     public @ResponseBody ErrorDto handleExceptions(Throwable e) {
 
         return new ErrorDto(REQUEST_FAIL_CODE, e.getMessage());
