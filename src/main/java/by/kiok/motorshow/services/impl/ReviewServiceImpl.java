@@ -11,12 +11,14 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static by.kiok.motorshow.utils.HibernateUtil.initializeIndex;
 
+@Service
 public class ReviewServiceImpl implements ReviewService {
 
     @Override

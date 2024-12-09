@@ -1,11 +1,17 @@
 package by.kiok.motorshow.services.impl;
 
+import by.kiok.motorshow.dtos.req.CarDtoReq;
+import by.kiok.motorshow.dtos.resp.CarInfoDto;
+import by.kiok.motorshow.dtos.resp.CarPageDto;
+import by.kiok.motorshow.mappers.CarMapper;
 import by.kiok.motorshow.models.Car;
 import by.kiok.motorshow.models.CarShowroom;
 import by.kiok.motorshow.models.enums.CarBrand;
 import by.kiok.motorshow.models.enums.CarCategory;
 import by.kiok.motorshow.services.CarService;
 import by.kiok.motorshow.utils.HibernateUtil;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -13,6 +19,9 @@ import org.hibernate.query.Query;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
+import org.mapstruct.factory.Mappers;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,10 +29,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+@Service
+@RequiredArgsConstructor
 public class CarServiceImpl implements CarService {
+
+    private final CarMapper carMapper = Mappers.getMapper(CarMapper.class);
     
     @Override
-    public Car findCarById(Long id) {
+    public CarInfoDto findCarById(Long id) {
         Car car = null;
         try (Session session = HibernateUtil.getSession()) {
             Transaction transaction = session.beginTransaction();
@@ -34,7 +47,7 @@ public class CarServiceImpl implements CarService {
             e.printStackTrace();
         }
 
-        return car;
+        return carMapper.toCarInfoDto(car);
     }
 
     @Override
@@ -92,30 +105,7 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public List<Car> findCarsSortedByPriceDesc() {
-        List<Car> cars = new ArrayList<>();
-        try (Session session = HibernateUtil.getSession()) {
-            Transaction transaction = session.beginTransaction();
-            CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-            CriteriaQuery<Car> criteriaQuery = criteriaBuilder.createQuery(Car.class);
-            Root<Car> root = criteriaQuery.from(Car.class);
-            cars = session.createQuery(criteriaQuery).getResultList();
-
-            cars = cars.stream()
-                    .filter(car -> car.getPrice() != null)
-                    .sorted((car1, car2) -> car2.getPrice().compareTo(car1.getPrice()))
-                    .toList();
-
-            transaction.commit();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
-
-        return cars;
-    }
-
-    @Override
-    public List<Car> findAllCars(int pageNumber, int pageSize) {
+    public CarPageDto findAllCars(Pageable pageable) {
         List<Car> cars = new ArrayList<>();
         try (Session session = HibernateUtil.getSession()) {
             session.beginTransaction();
@@ -125,8 +115,8 @@ public class CarServiceImpl implements CarService {
                      JOIN FETCH c.categories
                      JOIN FETCH c.showroom""";
             Query<Car> query = session.createQuery(hql, Car.class);
-            query.setFirstResult((pageNumber - 1) * pageSize);
-            query.setMaxResults(pageSize);
+            query.setFirstResult((pageable.getPageNumber() - 1) * pageable.getPageSize());
+            query.setMaxResults(pageable.getPageSize());
 
             cars = query.list();
 
@@ -135,11 +125,12 @@ public class CarServiceImpl implements CarService {
             e.printStackTrace();
         }
 
-        return cars;
+        return carMapper.toCarPageDto(cars, pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
-    public Car createCar(Car car) {
+    public CarInfoDto createCar(CarDtoReq carDto) {
+        Car car = carMapper.toCar(carDto);
         try (Session session = HibernateUtil.getSession()) {
             Transaction transaction = session.beginTransaction();
             session.save(car);
@@ -148,25 +139,29 @@ public class CarServiceImpl implements CarService {
             e.printStackTrace();
         }
 
-        return car;
+        return carMapper.toCarInfoDto(car);
     }
 
     @Override
-    public void updateCar(Car carUpdate, long id) {
+    public CarInfoDto updateCar(long id, CarDtoReq carDtoReq) {
         try (Session session = HibernateUtil.getSession()) {
             Transaction transaction = session.beginTransaction();
             Car car = session.get(Car.class, id);
 
-            car.setModel(carUpdate.getModel());
-            car.setPrice(carUpdate.getPrice());
-            car.setBrandCar(carUpdate.getBrandCar());
-            car.setYearOfProduction(carUpdate.getYearOfProduction());
+            car.setModel(carDtoReq.model);
+            car.setPrice(carDtoReq.price);
+            car.setBrandCar(CarBrand.valueOf(carDtoReq.brandCar));
+            car.setYearOfProduction(carDtoReq.yearOfProduction);
 
             session.merge(car);
             transaction.commit();
+
+            return carMapper.toCarInfoDto(car);
         } catch (HibernateException e) {
             e.printStackTrace();
         }
+
+        throw new EntityNotFoundException();
     }
 
     @Override
@@ -182,16 +177,21 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public void assignCarToShowroom(Car car, CarShowroom showroom) {
+    public boolean assignCarToShowroom(long id, long idShowroom) {
         try (Session session = HibernateUtil.getSession()) {
             Transaction transaction = session.beginTransaction();
-            Car carAssign = session.get(Car.class, car.getId());
+            Car carAssign = session.get(Car.class, id);
+            CarShowroom showroom = session.get(CarShowroom.class, idShowroom);
             carAssign.setShowroom(showroom);
             session.update(carAssign);
 
             transaction.commit();
+
+            return true;
         } catch (HibernateException e) {
             e.printStackTrace();
         }
+
+        return false;
     }
 }

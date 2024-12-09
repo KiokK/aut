@@ -1,16 +1,19 @@
 package by.kiok.motorshow.services;
 
-import by.kiok.motorshow.models.CarShowroom;
-
-import java.util.List;
+import by.kiok.motorshow.dtos.req.CarShowroomDtoReq;
+import by.kiok.motorshow.dtos.resp.CarShowroomInfoDto;
+import by.kiok.motorshow.dtos.resp.CarShowroomPageDto;
+import org.springframework.data.domain.Pageable;
 
 public interface CarShowroomService {
 
-    CarShowroom createCarShowroom(CarShowroom carShowroom);
+    CarShowroomInfoDto createCarShowroom(CarShowroomDtoReq carShowroomDtoReq);
 
-    void removeCarShowroom(Long id);
+    void deleteById(Long id);
 
-    void updateCarShowroom(CarShowroom carShowroom, Long id);
+    CarShowroomInfoDto updateCarShowroom(Long id, CarShowroomDtoReq carShowroomDtoReq);
 
-    List<CarShowroom> findAllCarShowrooms();
+    CarShowroomPageDto findAllCarShowrooms(Pageable pageable);
+
+    CarShowroomInfoDto findById(long id);
 }
