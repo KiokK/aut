@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "monitoring.status.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": "true",
+      "description": "Write: false - for disable logging methods."
+    },
+    {
+      "name": "monitoring.status.minExecutionTime",
+      "type": "java.lang.Integer",
+      "defaultValue": 100,
+      "description": "Time execution methods for logging (in ms.)"
+    }
+  ]
+}
