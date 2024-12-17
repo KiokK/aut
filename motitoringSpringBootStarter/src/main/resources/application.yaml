@@ -1,4 +1,4 @@
 monitoring:
   status:
-  minExecutionTime: 100
-  enabled: true
+    minExecutionTime: 100
+    enabled: true
